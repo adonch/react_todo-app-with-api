@@ -30,25 +30,27 @@ export const TodoItem: React.FC<TodoProps> = ({
         titleRef.current.focus();
       }
     }
+
     setShouldFocus(false);
   }, [shouldFocus]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    const trimmedTitle = editedTitle.trim();
 
-    if (editedTitle.trim() === '') {
+    if (trimmedTitle === '') {
       onDelete(todo.id);
-    } else if (editedTitle.trim() !== todo.title) {
-      onUpdate(todo.id, { title: editedTitle.trim() })
+    } else if (trimmedTitle !== todo.title) {
+      onUpdate(todo.id, { title: trimmedTitle })
         .then(() => setIsEditing(false))
         .catch(() => {
-          // setEditedTitle(todo.title);
           setShouldFocus(true);
         });
     } else {
       setIsEditing(false);
     }
   };
+
   return (
     <div
       data-cy="Todo"
@@ -78,7 +80,6 @@ export const TodoItem: React.FC<TodoProps> = ({
             onChange={e => setEditedTitle(e.target.value)}
             onBlur={handleSubmit}
             disabled={loading}
-            // autoFocus
             onKeyUp={e => {
               if (e.key === 'Escape') {
                 setIsEditing(false);

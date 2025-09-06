@@ -45,6 +45,7 @@ export const App: React.FC = () => {
         inputRef.current.focus();
       }
     }
+
     setShouldFocus(false);
   }, [shouldFocus]);
 
@@ -58,6 +59,7 @@ export const App: React.FC = () => {
 
     if (todosToChange.length === 0 || todos.length === 0) {
       setLoading(false);
+
       return;
     }
 
@@ -194,15 +196,17 @@ export const App: React.FC = () => {
           prev.map(todo => (todo.id === todoId ? updatedTodo : todo)),
         );
       })
-      .catch(error => {
+      .catch(errorMessage => {
         setError(ErrorMessages.Update);
-        throw error;
+        throw errorMessage;
       })
       .finally(() => {
         setLoading(false);
         setTodosToProcess(prev => {
           const newSet = new Set(prev);
+
           newSet.delete(todoId);
+
           return newSet;
         });
       });
@@ -216,6 +220,7 @@ export const App: React.FC = () => {
     }
 
     const completed = !todo.completed;
+
     setError('');
     setLoading(true);
     setTodosToProcess(prevTodosToProcess => prevTodosToProcess.add(todoId));
@@ -250,10 +255,6 @@ export const App: React.FC = () => {
     setError('');
   };
 
-  if (!USER_ID) {
-    return <UserWarning />;
-  }
-
   const filteredTodos = useMemo(() => {
     switch (filter) {
       case 'active':
@@ -264,6 +265,10 @@ export const App: React.FC = () => {
         return todos;
     }
   }, [todos, filter]);
+
+  if (!USER_ID) {
+    return <UserWarning />;
+  }
 
   return (
     <div className="todoapp">

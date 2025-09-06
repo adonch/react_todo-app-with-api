@@ -23,8 +23,6 @@ export const NewTodo: React.FC<NewTodoProps> = ({
 }) => {
   const userId = USER_ID;
 
-
-  console.log('NewTodo rendered');
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();

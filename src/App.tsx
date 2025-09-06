@@ -24,7 +24,7 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [inputValue, setInputValue] = useState('');
-  const [todosToProcess, setTodosToProcess] = useState<Set<number>>(new Set());
+  const [todosToProcessIds, setTodosToProcessIds] = useState<Set<number>>(new Set());
   const [shouldFocus, setShouldFocus] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +63,7 @@ export const App: React.FC = () => {
       return;
     }
 
-    setTodosToProcess(new Set(todosToChange.map(todo => todo.id)));
+    setTodosToProcessIds(new Set(todosToChange.map(todo => todo.id)));
 
     try {
       const updatePromises = todosToChange.map(todo =>
@@ -72,16 +72,20 @@ export const App: React.FC = () => {
 
       const results = await Promise.allSettled(updatePromises);
 
-      const successfullyUpdatedIds: number[] = [];
-      const failedUpdates: number[] = [];
-
-      for (const result of results) {
-        if (result.status === 'fulfilled') {
-          successfullyUpdatedIds.push(result.value);
-        } else {
-          failedUpdates.push(result.reason);
-        }
-      }
+      const { successfullyUpdatedIds, failedUpdatesIds } = results.reduce(
+        (acc, result) => {
+          if (result.status === 'fulfilled') {
+            acc.successfullyUpdatedIds.push(result.value);
+          } else {
+            acc.failedUpdatesIds.push(result.reason);
+          }
+          return acc;
+        },
+        {
+          successfullyUpdatedIds: [] as number[],
+          failedUpdatesIds: [] as number[],
+        },
+      );
 
       setTodos(prev =>
         prev.map(todo =>
@@ -91,12 +95,12 @@ export const App: React.FC = () => {
         ),
       );
 
-      if (failedUpdates.length > 0) {
+      if (failedUpdatesIds.length > 0) {
         setError(ErrorMessages.Update);
       }
     } finally {
       setLoading(false);
-      setTodosToProcess(new Set());
+      setTodosToProcessIds(new Set());
     }
   };
 
@@ -109,7 +113,7 @@ export const App: React.FC = () => {
 
     setError('');
     setLoading(true);
-    setTodosToProcess(new Set(completedTodos.map(todo => todo.id)));
+    setTodosToProcessIds(new Set(completedTodos.map(todo => todo.id)));
 
     try {
       const deletePromises = completedTodos.map(todo =>
@@ -137,7 +141,7 @@ export const App: React.FC = () => {
       }
     } finally {
       setLoading(false);
-      setTodosToProcess(new Set());
+      setTodosToProcessIds(new Set());
       setShouldFocus(true);
     }
   };
@@ -163,7 +167,7 @@ export const App: React.FC = () => {
 
   function handleDeleteTodo(todoId: number) {
     setError('');
-    setTodosToProcess(prevTodosToProcess => prevTodosToProcess.add(todoId));
+    setTodosToProcessIds(prevTodosToProcess => prevTodosToProcess.add(todoId));
     setLoading(true);
     deleteTodo(todoId)
       .then(() => {
@@ -174,7 +178,7 @@ export const App: React.FC = () => {
       })
       .finally(() => {
         setLoading(false);
-        setTodosToProcess(prevTodosToProcess => {
+        setTodosToProcessIds(prevTodosToProcess => {
           const newSet = new Set(prevTodosToProcess);
 
           newSet.delete(todoId);
@@ -188,7 +192,7 @@ export const App: React.FC = () => {
   function handleTodoUpdate(todoId: number, data: Partial<Todo>) {
     setError('');
     setLoading(true);
-    setTodosToProcess(prev => new Set(prev).add(todoId));
+    setTodosToProcessIds(prev => new Set(prev).add(todoId));
 
     return updateTodo(todoId, data)
       .then(updatedTodo => {
@@ -202,7 +206,7 @@ export const App: React.FC = () => {
       })
       .finally(() => {
         setLoading(false);
-        setTodosToProcess(prev => {
+        setTodosToProcessIds(prev => {
           const newSet = new Set(prev);
 
           newSet.delete(todoId);
@@ -223,7 +227,7 @@ export const App: React.FC = () => {
 
     setError('');
     setLoading(true);
-    setTodosToProcess(prevTodosToProcess => prevTodosToProcess.add(todoId));
+    setTodosToProcessIds(prevTodosToProcess => prevTodosToProcess.add(todoId));
     updateTodo(todoId, { completed })
       .then(updatedTodo => {
         setTodos(prev => prev.map(t => (t.id === todoId ? updatedTodo : t)));
@@ -233,7 +237,7 @@ export const App: React.FC = () => {
       })
       .finally(() => {
         setLoading(false);
-        setTodosToProcess(prevTodosToProcess => {
+        setTodosToProcessIds(prevTodosToProcess => {
           const newSet = new Set(prevTodosToProcess);
 
           newSet.delete(todoId);
@@ -305,7 +309,7 @@ export const App: React.FC = () => {
           tempTodo={tempTodo}
           loading={loading}
           onDelete={handleDeleteTodo}
-          todosToDelete={todosToProcess}
+          todosToDelete={todosToProcessIds}
           onStatusChange={handleStatusChange}
           onUpdate={handleTodoUpdate}
         />
